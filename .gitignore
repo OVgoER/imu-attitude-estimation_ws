@@ -1,0 +1,9 @@
+results/
+bags/
+build/
+builds/
+install/
+installs/
+log/
+__pycache__/
+*.py[cod]

@@ -1,0 +1,27 @@
+imu_algorithm_runner:
+  ros__parameters:
+    imu_topic: /imu/raw
+    world_frame: world
+    base_frame_prefix: imu_estimator
+    enable_loop_closure: true
+    publish_python_fgo: false
+
+imu_benchmark_driver:
+  ros__parameters:
+    scenario: fast_rotation
+    trajectory: circle
+    duration: 35.0
+    rate_hz: 200.0
+    seed: 7
+    gyro_noise: 0.004
+    accel_noise: 0.08
+    gyro_bias: [0.006, -0.004, 0.010]
+    accel_bias: [0.04, -0.02, 0.06]
+    publish_clock: true
+
+imu_metrics_node:
+  ros__parameters:
+    scenario: fast_rotation
+    trajectory: circle
+    output_dir: results
+    run_id: ""
