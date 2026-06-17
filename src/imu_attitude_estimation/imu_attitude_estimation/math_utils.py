@@ -103,6 +103,50 @@ def quat_to_matrix(q: Iterable[float]) -> np.ndarray:
     )
 
 
+def quat_from_matrix(matrix: Iterable[Iterable[float]]) -> np.ndarray:
+    R = np.asarray(matrix, dtype=float)
+    trace = float(np.trace(R))
+    if trace > 0.0:
+        s = math.sqrt(trace + 1.0) * 2.0
+        return quat_normalize(
+            [
+                0.25 * s,
+                (R[2, 1] - R[1, 2]) / s,
+                (R[0, 2] - R[2, 0]) / s,
+                (R[1, 0] - R[0, 1]) / s,
+            ]
+        )
+    if R[0, 0] > R[1, 1] and R[0, 0] > R[2, 2]:
+        s = math.sqrt(max(0.0, 1.0 + R[0, 0] - R[1, 1] - R[2, 2])) * 2.0
+        return quat_normalize(
+            [
+                (R[2, 1] - R[1, 2]) / s,
+                0.25 * s,
+                (R[0, 1] + R[1, 0]) / s,
+                (R[0, 2] + R[2, 0]) / s,
+            ]
+        )
+    if R[1, 1] > R[2, 2]:
+        s = math.sqrt(max(0.0, 1.0 + R[1, 1] - R[0, 0] - R[2, 2])) * 2.0
+        return quat_normalize(
+            [
+                (R[0, 2] - R[2, 0]) / s,
+                (R[0, 1] + R[1, 0]) / s,
+                0.25 * s,
+                (R[1, 2] + R[2, 1]) / s,
+            ]
+        )
+    s = math.sqrt(max(0.0, 1.0 + R[2, 2] - R[0, 0] - R[1, 1])) * 2.0
+    return quat_normalize(
+        [
+            (R[1, 0] - R[0, 1]) / s,
+            (R[0, 2] + R[2, 0]) / s,
+            (R[1, 2] + R[2, 1]) / s,
+            0.25 * s,
+        ]
+    )
+
+
 def quat_rotate(q: Iterable[float], vector: Iterable[float]) -> np.ndarray:
     return quat_to_matrix(q) @ np.asarray(vector, dtype=float)
 

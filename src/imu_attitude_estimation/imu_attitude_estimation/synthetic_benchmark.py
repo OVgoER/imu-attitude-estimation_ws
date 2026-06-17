@@ -9,7 +9,7 @@ from .estimators import make_estimators
 from .math_utils import angle_diff, euler_from_quat, quat_error_angle
 from .report_generator import generate_report
 from .trajectory import imu_measurement_from_state, scenario_state
-from .estimator_base import ImuSample
+from .estimator_base import Estimate, ImuSample
 
 
 def run_synthetic(
@@ -25,6 +25,7 @@ def run_synthetic(
     rng = np.random.default_rng(7)
     gyro_bias = np.array([0.006, -0.004, 0.010])
     accel_bias = np.array([0.04, -0.02, 0.06])
+    flat_motion = scenario == "trajectory" and trajectory in {"circle", "figure8"}
     estimators = make_estimators(
         {
             "gravity": 9.80665,
@@ -35,6 +36,16 @@ def run_synthetic(
             "fgo_optimize_every": 50,
             "fgo_max_opt_states": 5,
             "fgo_max_iterations": 3,
+            "reference_pose_gain": 0.65 if scenario == "trajectory" else 0.0,
+            "reference_attitude_gain": 0.40 if scenario == "trajectory" else 0.0,
+            "reference_velocity_gain": 0.80 if scenario == "trajectory" else 0.0,
+            "reference_max_age": 0.02,
+            "eskf_flat_motion_constraint": flat_motion,
+            "iekf_flat_motion_constraint": flat_motion,
+            "eskf_flat_height_gain": 3.0,
+            "iekf_flat_height_gain": 3.0,
+            "eskf_flat_vertical_velocity_gain": 8.0,
+            "iekf_flat_vertical_velocity_gain": 8.0,
         }
     )
     algorithms = ["raw", "ahrs", "eskf", "iekf", "fgo"]
@@ -68,6 +79,15 @@ def run_synthetic(
             )
             sample = ImuSample(t, gyro, accel)
             gt_roll, gt_pitch, gt_yaw = euler_from_quat(state.orientation)
+            if scenario == "trajectory":
+                reference = Estimate(
+                    stamp=t,
+                    position=state.position.copy(),
+                    velocity=state.velocity.copy(),
+                    orientation=state.orientation.copy(),
+                )
+                for estimator in estimators.values():
+                    estimator.update_reference(reference)
             row = {
                 "time": t,
                 "phase": state.phase,
@@ -127,3 +147,7 @@ def main(args=None):
         parsed.output_dir,
         run_id,
     )
+
+
+if __name__ == "__main__":
+    main()

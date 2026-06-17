@@ -10,7 +10,7 @@ def data_files_for(directory):
     return [
         (
             os.path.join("share", package_name, directory),
-            glob(os.path.join(directory, "*")),
+            [path for path in glob(os.path.join(directory, "*")) if os.path.isfile(path)],
         )
     ]
 

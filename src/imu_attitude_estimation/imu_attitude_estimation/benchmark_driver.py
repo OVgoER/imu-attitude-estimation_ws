@@ -1,4 +1,5 @@
 import os
+import time
 from pathlib import Path
 
 import numpy as np
@@ -31,6 +32,7 @@ class BenchmarkDriver(Node):
         self.declare_parameter("gyro_bias", [0.006, -0.004, 0.010])
         self.declare_parameter("accel_bias", [0.04, -0.02, 0.06])
         self.declare_parameter("publish_clock", True)
+        self.declare_parameter("start_delay_sec", 0.0)
         self.declare_parameter("sync_gazebo_pose", True)
         self.declare_parameter("gazebo_sync_backend", "gz_transport")
         self.declare_parameter("gazebo_sync_rate_hz", 30.0)
@@ -49,6 +51,7 @@ class BenchmarkDriver(Node):
         self.gyro_noise = float(self.get_parameter("gyro_noise").value)
         self.accel_noise = float(self.get_parameter("accel_noise").value)
         self.publish_clock = bool(self.get_parameter("publish_clock").value)
+        self.start_delay_sec = max(0.0, float(self.get_parameter("start_delay_sec").value))
         self.sync_gazebo_pose = bool(self.get_parameter("sync_gazebo_pose").value)
         self.gazebo_sync_backend = str(self.get_parameter("gazebo_sync_backend").value)
         self.gazebo_sync_period = 1.0 / max(1.0, float(self.get_parameter("gazebo_sync_rate_hz").value))
@@ -66,6 +69,7 @@ class BenchmarkDriver(Node):
         self.gz_node = gz_transport.Node() if self.sync_gazebo_pose else None
         self.last_gazebo_sync_log = 0.0
         self.last_gazebo_sync_time = -1e9
+        self.wall_start_time = time.monotonic()
         self.timer = self.create_timer(self.dt, self.on_timer)
         self.get_logger().info(
             f"Benchmark driver running scenario={self.scenario}, trajectory={self.trajectory}, "
@@ -73,6 +77,8 @@ class BenchmarkDriver(Node):
         )
 
     def on_timer(self) -> None:
+        if time.monotonic() - self.wall_start_time < self.start_delay_sec:
+            return
         if self.t > self.duration:
             self.get_logger().info("Benchmark complete; shutting down driver.")
             rclpy.shutdown()

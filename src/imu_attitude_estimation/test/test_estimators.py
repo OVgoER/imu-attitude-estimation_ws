@@ -29,3 +29,28 @@ def test_zupt_velocity_converges_static():
             estimator.update(sample)
     assert np.linalg.norm(estimators["eskf"].estimate.velocity) < 0.05
     assert np.linalg.norm(estimators["iekf"].estimate.velocity) < 0.05
+
+
+def test_inekf_static_update_keeps_covariance_finite():
+    estimator = make_estimators({"fgo_optimize_every": 100000})["iekf"]
+    accel = np.array([0.0, 0.0, GRAVITY])
+    for i in range(250):
+        estimator.update(ImuSample(i * 0.01, np.zeros(3), accel))
+    assert estimator.estimate.extra["inekf_group_state"] == 1.0
+    assert estimator.estimate.extra["se23_group_state"] == 1.0
+    assert np.linalg.norm(estimator.estimate.velocity) < 0.05
+    assert np.all(np.isfinite(estimator.P))
+    assert np.all(np.diag(estimator.P) > 0.0)
+
+
+def test_inekf_uses_explicit_se23_group_state():
+    estimator = make_estimators({"fgo_optimize_every": 100000})["iekf"]
+    sample = ImuSample(0.0, np.zeros(3), np.array([0.0, 0.0, GRAVITY]))
+    estimator.update(sample)
+    X = estimator.X.matrix()
+    assert X.shape == (5, 5)
+    expected_tail = np.array(
+        [[0.0, 0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 0.0, 1.0]]
+    )
+    assert np.allclose(X[3:5, :], expected_tail)
+    assert np.allclose(X[0:3, 0:3].T @ X[0:3, 0:3], np.eye(3), atol=1e-9)

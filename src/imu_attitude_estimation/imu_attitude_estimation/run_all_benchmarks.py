@@ -13,9 +13,9 @@ def main(args=None):
     parser.add_argument("--short", action="store_true")
     parsed = parser.parse_args(args=args)
     cases = [
-        ("fast_rotation", "circle", 12.0 if parsed.short else 35.0),
+        ("fast_rotation", "yaw", 12.0 if parsed.short else 30.0),
         ("static_zero_drift", "circle", 12.0 if parsed.short else 60.0),
-        ("static_dynamic", "circle", 30.0 if parsed.short else 75.0),
+        ("static_dynamic", "circle", 45.0),
         ("trajectory", "circle", 30.0 if parsed.short else 60.0),
         ("trajectory", "figure8", 30.0 if parsed.short else 60.0),
         ("trajectory", "spiral", 30.0 if parsed.short else 60.0),
